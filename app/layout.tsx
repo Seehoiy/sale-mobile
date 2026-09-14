@@ -3,7 +3,7 @@ import "./globals.css";
 import LayoutShell from "@/components/LayoutShell";
 
 export const metadata: Metadata = {
-  title: "Seehoiy — Dev",
+  title: "Buy-Sell Products System",
   description: "ລະບົບຄຸ້ມຄອງຮ້ານໂທລະສັບ Multi-Branch ພ້ອມ IMEI Tracking",
 };
 
