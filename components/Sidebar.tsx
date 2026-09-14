@@ -26,13 +26,15 @@ export default function Sidebar() {
   const router = useRouter();
   const [session, setSession] = useState<SessionUser | null>(null);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
 
   useEffect(() => {
+    setMounted(true);
     setSession(getSession());
   }, []);
   
-  const adminRole = isAdmin(session);
+  const adminRole = isAdmin ? isAdmin(session) : false;
 
   return (
     
