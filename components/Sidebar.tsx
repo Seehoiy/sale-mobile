@@ -83,10 +83,12 @@ export default function Sidebar() {
             className="text-red-600 hover:underline font-semibold shrink-0 cursor-pointer">
               ອອກ
             </button>
-            <LogoutModal
+            {mounted && showLogoutAlert && (
+            <LogoutModal 
             isOpen={showLogoutAlert}
             onClose={() => setShowLogoutAlert(false)}
             />
+            )}
           </div>
         ) : (
           <span className="font-mono text-gray-400">v1.0 · IMEI•DESK</span>
