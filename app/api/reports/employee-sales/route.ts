@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -8,19 +10,17 @@ export async function GET(req: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    // ເງື່ອນໄຂຕອງວັນທີ
     const dateFilter: any = {};
     if (startDate) {
-        dateFilter.gte = new Date(`${startDate}T00:00:00.000z`);
+      dateFilter.gte = new Date(`${startDate}T00:00:00.000z`);
     }
     if (endDate) {
-        dateFilter.lte = new Date(`${endDate}T23:59:59.999z`);
+      dateFilter.lte = new Date(`${endDate}T23:59:59.999z`);
     }
 
-    // ດຶງຂໍ້ມູນ Sales ທັງໝົດ ພ້ອມ Employee
     const sales = await prisma.sale.findMany({
       where: {
-        ...(branchId ? { branchId } : {}),
+        ...(branchId && branchId !== "ALL" ? { branchId } : {}),
         ...(startDate || endDate ? { createdAt: dateFilter } : {}),
       },
       include: {
@@ -32,7 +32,6 @@ export async function GET(req: Request) {
     const summaryMap: Record<string, any> = {};
 
     sales.forEach((sale) => {
-      // ຖ້າໃບບິນເກົ່າບໍ່ມີ employeeId ໃຫ້ຈັດກຸ່ມເປັນ "ບໍ່ລະບຸພະນັກງານ"
       const empId = sale.employeeId || "unassigned";
       const empName = sale.employee?.fullName || "ບໍ່ລະບຸພະນັກງານ (ໃບບິນເກົ່າ)";
       const empCode = sale.employee?.empCode || "-";
@@ -41,7 +40,7 @@ export async function GET(req: Request) {
         summaryMap[empId] = {
           employeeId: empId,
           employeeName: empName,
-          empCode: empCode,
+          empCode,
           billCount: 0,
           totalSales: 0,
         };

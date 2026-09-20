@@ -47,6 +47,8 @@ export default function SalesReportPage() {
     const s = getSession();
     setSession(s);
 
+    const initialBranchId = s?.role === "ADMIN" ? "ALL" : s?.branchId || "ALL";
+
     fetch("/api/branches")
       .then((r) => r.json())
       .then((data) => {
@@ -63,7 +65,7 @@ export default function SalesReportPage() {
     const today = new Date().toISOString().split("T")[0];
     setStartDate(today);
     setEndDate(today);
-    fetchReport(today, today, s?.role === "ADMIN" ? "ALL" : s?.branchId || "");
+    fetchReport(today, today, initialBranchId);
   }, []);
 
   const fetchReport = async (
@@ -161,7 +163,15 @@ export default function SalesReportPage() {
             📊 ລາຍງານຍອດຂາຍສິນຄ້າ (Detailed Sales Report)
           </h1>
           <p className="text-gray-500 text-xs md:text-sm mt-1">
-            ແຈ້ງລະອຽດວ່າຂາຍສິນຄ້າໃດ, IMEI ໃດ, ໃຜເປັນຜູ້ຂາຍ ແລະ ໄລຍະເວລາການຮັບປະກັນ
+            {admin ? (
+              <span className="text-blue-700 font-semibold">
+                🛡️ ສິດ Admin: ສາມາດກວດເບິ່ງ ຍອດຂາຍລວມທຸກສາຂາ ຫຼື ແຍກຕາມສາຂາໄດ້
+              </span>
+            ) : (
+              <span className="text-blue-600 font-semibold">
+                🔒 ສິດ Store Manager: ຮັບສິດເບິ່ງຍອດຂາຍສະເພາະສາຂາ {session?.branchName} ເທົ່ານັ້ນ
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -177,7 +187,7 @@ export default function SalesReportPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <div className="text-xs text-gray-500 font-semibold uppercase">ຈຳນວນສິນຄ້າທີ່ຂາຍໄດ້</div>
           <div className="font-display text-2xl font-bold text-blue-600 mt-1 font-mono">
-            {reportData.summary.totalItemsCount} ຢ່າງ
+            {reportData.summary.totalItemsCount} ສິນຄ້າ
           </div>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -193,10 +203,12 @@ export default function SalesReportPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Branch Filter */}
           <div className="w-64">
-            <label className="text-gray-600 text-[10px] block mb-1 font-semibold">ສາຂາ</label>
+            <label className="text-gray-600 text-[10px] block mb-1 font-semibold">
+              {admin ? "ສາຂາ (Branch Filter)" : "ສາຂາ (Locked)"}
+            </label>
             <select
               disabled={!admin}
-              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-bold focus:outline-none disabled:opacity-80"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-bold focus:outline-none disabled:opacity-80 cursor-pointer disabled:cursor-not-allowed"
               value={selectedBranchId}
               onChange={(e) => {
                 setSelectedBranchId(e.target.value);
@@ -235,7 +247,7 @@ export default function SalesReportPage() {
             </div>
             <button
               onClick={() => fetchReport()}
-              className="self-end mb-0.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold text-xs transition-colors shadow-sm"
+              className="self-end mb-0.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold text-xs transition-colors shadow-sm cursor-pointer"
             >
               ຄົ້ນຫາ
             </button>
