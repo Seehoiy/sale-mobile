@@ -13,23 +13,29 @@ function getPrismaClient(): PrismaClient {
   return globalForPrisma.prisma;
 }
 
-// 💡 ລາຍຊື່ Property ທີ່ Webpack / Node.js ໃຊ້ກວດສອບ Module ຕອນ Build
-const IGNORED_PROPS = new Set([
-  "then",
-  "$$typeof",
-  "toJSON",
-  "__esModule",
-  "default",
-  "constructor",
-  "toString",
-  "valueOf",
-  "inspect",
-]);
+// 💡 ກວດສອບວ່າຢູ່ຕອນ Build Phase ຂອງ Next.js ບໍ
+const isBuildPhase =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.IS_BUILD === "true";
 
 export const prisma = new Proxy({} as PrismaClient, {
   get(target, prop, receiver) {
-    // 💡 ຖ້າ Webpack ກວດສອບ Metadata Module ຕອນ Build ໃຫ້ Return undefined ທັນທີ (ບໍ່ໃຫ້ new PrismaClient)
-    if (typeof prop === "symbol" || IGNORED_PROPS.has(prop as string)) {
+    // 💡 ຖ້າເປັນ Build Phase ຫຼື Webpack ກວດສອບ Module ໃຫ້ Return undefined ທັນທີ (ບໍ່ new PrismaClient)
+    if (
+      isBuildPhase ||
+      typeof prop === "symbol" ||
+      [
+        "then",
+        "$$typeof",
+        "toJSON",
+        "__esModule",
+        "default",
+        "constructor",
+        "toString",
+        "valueOf",
+        "inspect",
+      ].includes(prop as string)
+    ) {
       return undefined;
     }
 
