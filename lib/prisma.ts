@@ -14,11 +14,21 @@ function getPrismaClient(): PrismaClient {
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop: keyof PrismaClient) {
+  get(target, prop, receiver) {
+    // 💡 ປ້ອງກັນ Webpack / Next.js Bundler ທົດສອບ Property ຕອນ Build
+    if (
+      typeof prop === "symbol" ||
+      prop === "then" ||
+      prop === "$$typeof" ||
+      prop === "toJSON"
+    ) {
+      return undefined;
+    }
+
     const client = getPrismaClient();
-    const value = client[prop];
+    const value = Reflect.get(client, prop, receiver);
     if (typeof value === "function") {
-      return (value as Function).bind(client);
+      return value.bind(client);
     }
     return value;
   },
