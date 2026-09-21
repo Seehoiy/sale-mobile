@@ -1,10 +1,9 @@
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 import { verifyPassword } from "@/lib/hash";
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/auth/login
 // body: { username, password, branchId }
