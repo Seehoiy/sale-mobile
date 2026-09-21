@@ -6,6 +6,9 @@ const nextConfig = {
       bodySizeLimit: "5mb",
     },
   },
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./node_modules/.prisma/client/**/*"],
+  },
 };
 
 module.exports = nextConfig;
