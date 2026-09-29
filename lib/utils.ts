@@ -3,8 +3,9 @@ export function genCode(prefix: string) {
   const y = now.getFullYear().toString().slice(-2);
   const m = (now.getMonth() + 1).toString().padStart(2, "0");
   const d = now.getDate().toString().padStart(2, "0");
+  const timeSuffix = now.getTime().toString().slice(-4);
   const rand = Math.floor(Math.random() * 9000 + 1000);
-  return `${prefix}-${y}${m}${d}-${rand}`;
+  return `${prefix}-${y}${m}${d}-${timeSuffix}${rand}`;
 }
 
 export function formatKip(amount: number | string) {

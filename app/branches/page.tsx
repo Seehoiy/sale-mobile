@@ -239,7 +239,7 @@ export default function BranchesPage() {
         <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-900 tracking-wide">
           🏢 ຈັດການສາຂາ ແລະ ພະນັກງານ
         </h1>
-        <p className="text-gray-500 text-xs md:text-sm mt-1">
+        <p className="text-blue-700 font-semibold">
           ສາຂາ ແລະ ພະນັກງານສາມາດເພີ່ມ/ແກ້ໄຂໄດ້ສະເພາະ ແອັດມິນ (ADMIN) ເທົ່ານັ້ນ. ພະນັກງານແຕ່ລະສາຂາຖືກແຍກກັນຢ່າງຈະແຈ້ງ.
         </p>
       </div>

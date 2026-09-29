@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatKip } from "@/lib/utils";
-import { getSession, SessionUser } from "@/lib/session";
+import { getSession, SessionUser, getAuthHeaders } from "@/lib/session";
 import PosReceiptPrint, { ReceiptData } from "@/components/pos/PosReceiptPrint";
 import PosSellerAuthModal, { EmployeeOption } from "@/components/pos/PosSellerAuthModal";
 import PosHistoryModal from "@/components/pos/PosHistoryModal";
@@ -75,7 +75,7 @@ export default function PosPage() {
     setSession(s);
     setNow(new Date().toLocaleString("lo-LA"));
 
-    fetch(`/api/employees?branchId=${s.branchId}`)
+    fetch(`/api/employees?branchId=${s.branchId}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -109,7 +109,9 @@ export default function PosPage() {
       return;
     }
     const t = setTimeout(() => {
-      fetch(`/api/inventory?branchId=${session.branchId}&status=IN_STOCK&imei=${encodeURIComponent(barcode)}`)
+      fetch(`/api/inventory?branchId=${session.branchId}&status=IN_STOCK&imei=${encodeURIComponent(barcode)}`, {
+        headers: getAuthHeaders(),
+      })
         .then((r) => r.json())
         .then(setResults);
     }, 250);
@@ -200,12 +202,15 @@ export default function PosPage() {
     setSelectedKey(null);
   }
 
+  const [checkoutStartTime, setCheckoutStartTime] = useState<number | null>(null);
+
   function handleOpenCheckout() {
     setMessage(null);
     if (cart.length === 0) {
       setMessage({ type: "err", text: "ຍັງບໍ່ມີສິນຄ້າໃນລາຍການຂາຍ" });
       return;
     }
+    setCheckoutStartTime(Date.now());
     setPinCode("");
     setPinError("");
     setIsAuthModalOpen(true);
@@ -215,6 +220,11 @@ export default function PosPage() {
     if (!session) return;
     if (!selectedEmpId) {
       setPinError("ກະລຸນາເລືອກຊື່ຜູ້ຂາຍ (Seller Name)");
+      return;
+    }
+
+    if (checkoutStartTime && Date.now() - checkoutStartTime > 5 * 60 * 1000) {
+      setPinError("⚠️ ໝົດເວລາ 5 ນາທີ ໃນການອອກໃບບິນ! ກະລຸນາອອກໃບບິນໃໝ່.");
       return;
     }
 
@@ -233,10 +243,14 @@ export default function PosPage() {
     try {
       const res = await fetch("/api/sales", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({
           branchId: session.branchId,
           employeeId: selectedEmpId,
+          clientTimestamp: checkoutStartTime,
           items: cart.map((l) => ({
             productId: l.productId,
             inventoryItemId: l.inventoryItemId,
@@ -412,7 +426,7 @@ export default function PosPage() {
 
             <div className="bg-[#f6c9d8] text-center py-6 border-t border-gray-300">
               <span className="font-display text-4xl md:text-5xl font-black text-gray-800 tracking-wider uppercase italic">
-                SELL (ຂາຍສິນຄ້າ)
+                SALE (ຂາຍສິນຄ້າ)
               </span>
             </div>
 
@@ -553,7 +567,7 @@ export default function PosPage() {
         <PosHistoryModal
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
-          branchId={session.branchId}
+          session={session}
           onSelectPrint={(receipt) => {
             setLastReceipt(receipt);
             setIsHistoryOpen(false);

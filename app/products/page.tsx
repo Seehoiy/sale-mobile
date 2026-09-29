@@ -268,7 +268,7 @@ export default function ProductsPage() {
         <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-900 tracking-wide">
           📱 ຈັດການສິນຄ້າ / ລຸ້ນໂທລະສັບ
         </h1>
-        <p className="text-gray-500 text-xs md:text-sm mt-1">
+        <p className="text-blue-700 font-semibold">
           ເພີ່ມ, ແກ້ໄຂລາຄາ, ແລະ ເປີດ/ປິດການຂາຍ ຂອງແຕ່ລະລຸ້ນສິນຄ້າ (SKU)
         </p>
       </div>

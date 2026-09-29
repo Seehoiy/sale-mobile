@@ -3,21 +3,25 @@ export type SessionUser = {
   empCode: string;
   username: string;
   fullName: string;
-  role: string;
+  role: "ADMIN" | "MANAGER" | "CASHIER" | "TECHNICIAN" | "WAREHOUSE" | string;
   branchId: string;
   branchName: string;
+  token?: string;
 };
 
 const KEY = "imei_desk_session";
 
+// 💡 ໃຊ້ sessionStorage ເພື່ອໃຫ້ອອກຈາກລະບົບອັດຕະໂນມັດ ເມື່ອປິດ Browser / Tab
 export function saveSession(user: SessionUser) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(user));
+  sessionStorage.setItem(KEY, JSON.stringify(user));
+  // ລຶບ localStorage ເກົ່າອອກ (ຖ້າມີ)
+  localStorage.removeItem(KEY);
 }
 
 export function getSession(): SessionUser | null {
   if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(KEY);
+  const raw = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as SessionUser;
@@ -28,7 +32,19 @@ export function getSession(): SessionUser | null {
 
 export function clearSession() {
   if (typeof window === "undefined") return;
+  sessionStorage.removeItem(KEY);
   localStorage.removeItem(KEY);
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const session = getSession();
+  if (!session) return {};
+  const headers: Record<string, string> = {};
+  if (session.token) {
+    headers["Authorization"] = `Bearer ${session.token}`;
+  }
+  headers["x-session-user"] = JSON.stringify(session);
+  return headers;
 }
 
 export function isAdmin(user: SessionUser | null): boolean {

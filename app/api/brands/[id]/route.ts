@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // Adjust path to your db client
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = 'force-dynamic';
 
 // 1. API ແກ້ໄຂຊື່ຍີ່ຫໍ້ (PATCH)
 export async function PATCH(

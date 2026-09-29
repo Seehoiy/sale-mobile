@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatKip } from "@/lib/utils";
-import { getSession, SessionUser, isAdmin } from "@/lib/session";
+import { getSession, SessionUser, isAdmin, getAuthHeaders } from "@/lib/session";
 
 type Branch = { id: string; name: string };
 
@@ -49,7 +49,7 @@ export default function SalesReportPage() {
 
     const initialBranchId = s?.role === "ADMIN" ? "ALL" : s?.branchId || "ALL";
 
-    fetch("/api/branches")
+    fetch("/api/branches", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -60,7 +60,8 @@ export default function SalesReportPage() {
             setSelectedBranchId(s.branchId);
           }
         }
-      });
+      })
+      .catch(console.error);
 
     const today = new Date().toISOString().split("T")[0];
     setStartDate(today);
@@ -80,7 +81,9 @@ export default function SalesReportPage() {
       if (sDate) params.append("startDate", sDate);
       if (eDate) params.append("endDate", eDate);
 
-      const res = await fetch(`/api/reports/sales-detail?${params.toString()}`);
+      const res = await fetch(`/api/reports/sales-detail?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         setReportData(data);
@@ -155,7 +158,7 @@ export default function SalesReportPage() {
   const admin = isAdmin(session);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6 space-y-6">
+    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6 space-y-6 font-sans">
       {/* Page Header */}
       <div className="flex flex-wrap justify-between items-center gap-4 border-b border-gray-200 pb-4">
         <div>
@@ -199,16 +202,16 @@ export default function SalesReportPage() {
       </div>
 
       {/* Toolbar Filter */}
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Branch Filter */}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          {/* Branch Filter (Left) */}
           <div className="w-64">
             <label className="text-gray-600 text-[10px] block mb-1 font-semibold">
               {admin ? "ສາຂາ (Branch Filter)" : "ສາຂາ (Locked)"}
             </label>
             <select
               disabled={!admin}
-              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-bold focus:outline-none disabled:opacity-80 cursor-pointer disabled:cursor-not-allowed"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-bold focus:outline-none disabled:opacity-80 cursor-pointer disabled:cursor-not-allowed shadow-sm"
               value={selectedBranchId}
               onChange={(e) => {
                 setSelectedBranchId(e.target.value);
@@ -221,65 +224,71 @@ export default function SalesReportPage() {
                   📍 {b.name}
                 </option>
               ))}
+              {!admin && session && (
+                <option value={session.branchId}>📍 {session.branchName}</option>
+              )}
             </select>
           </div>
 
-          {/* Date Picker */}
-          <div className="flex items-center gap-2 text-xs">
-            <div>
-              <span className="text-gray-600 text-[10px] block mb-0.5 font-semibold">ແຕ່ວັນທີ</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
-              />
-            </div>
-            <span className="text-gray-400 self-end mb-1">-</span>
-            <div>
-              <span className="text-gray-600 text-[10px] block mb-0.5 font-semibold">ຫາວັນທີ</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
-              />
-            </div>
-            <button
-              onClick={() => fetchReport()}
-              className="self-end mb-0.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold text-xs transition-colors shadow-sm cursor-pointer"
-            >
-              ຄົ້ນຫາ
-            </button>
-          </div>
-
-          {/* Quick Period Buttons */}
-          <div className="flex items-center gap-1 text-xs">
-            <div className="inline-flex items-center border border-gray-300 rounded-lg bg-white p-0.5">
-              <button onClick={() => shiftDays(-1)} className="px-2 py-1 hover:bg-gray-100 rounded text-gray-700 font-bold" title="ມື້ຜ່ານມາ">
-                ◀
-              </button>
-              <button onClick={() => setQuickFilter("today")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 border-x border-gray-200 font-semibold">
-                ມື້ນີ້
-              </button>
-              <button onClick={() => shiftDays(1)} className="px-2 py-1 hover:bg-gray-100 rounded text-gray-700 font-bold" title="ມື້ຕໍ່ໄປ">
-                ▶
+          {/* Date Picker & Quick Period Buttons (Right Side) */}
+          <div className="flex flex-col items-end gap-2 text-xs">
+            {/* Date Pickers */}
+            <div className="flex items-center gap-2">
+              <div>
+                <span className="text-gray-600 text-[10px] block mb-0.5 font-semibold">ແຕ່ວັນທີ</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-white border border-gray-300 rounded px-2.5 py-1 text-xs text-gray-900 shadow-sm"
+                />
+              </div>
+              <span className="text-gray-400 self-end mb-1">-</span>
+              <div>
+                <span className="text-gray-600 text-[10px] block mb-0.5 font-semibold">ຫາວັນທີ</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-white border border-gray-300 rounded px-2.5 py-1 text-xs text-gray-900 shadow-sm"
+                />
+              </div>
+              <button
+                onClick={() => fetchReport()}
+                className="self-end mb-0.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1 rounded font-bold text-xs transition-colors shadow-sm cursor-pointer"
+              >
+                ຄົ້ນຫາ
               </button>
             </div>
 
-            <div className="inline-flex items-center border border-gray-300 rounded-lg bg-white p-0.5">
-              <button onClick={() => setQuickFilter("thisWeek")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 font-medium">
-                ອາທິດນີ້
-              </button>
-              <button onClick={() => setQuickFilter("thisMonth")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 font-medium">
-                ເດືອນນີ້
-              </button>
-              <button onClick={() => setQuickFilter("thisYear")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 font-medium">
-                ປີນີ້
-              </button>
-              <button onClick={() => setQuickFilter("all")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-600">
-                ທັງໝົດ
-              </button>
+            {/* Quick Period Buttons (Bottom-Right under Date Pickers) */}
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <div className="inline-flex items-center border border-gray-300 rounded-lg bg-white p-0.5 shadow-sm">
+                <button onClick={() => shiftDays(-1)} className="px-2 py-1 hover:bg-gray-100 rounded text-gray-700 font-bold" title="ມື້ຜ່ານມາ">
+                  ◀
+                </button>
+                <button onClick={() => setQuickFilter("today")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 border-x border-gray-200 font-semibold">
+                  ມື້ນີ້
+                </button>
+                <button onClick={() => shiftDays(1)} className="px-2 py-1 hover:bg-gray-100 rounded text-gray-700 font-bold" title="ມື້ຕໍ່ໄປ">
+                  ▶
+                </button>
+              </div>
+
+              <div className="inline-flex items-center border border-gray-300 rounded-lg bg-white p-0.5 shadow-sm">
+                <button onClick={() => setQuickFilter("thisWeek")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 font-medium">
+                  ອາທິດນີ້
+                </button>
+                <button onClick={() => setQuickFilter("thisMonth")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 font-medium">
+                  ເດືອນນີ້
+                </button>
+                <button onClick={() => setQuickFilter("thisYear")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-800 font-medium">
+                  ປີນີ້
+                </button>
+                <button onClick={() => setQuickFilter("all")} className="px-2.5 py-1 hover:bg-gray-100 rounded text-gray-600">
+                  ທັງໝົດ
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -291,7 +300,7 @@ export default function SalesReportPage() {
             placeholder="🔍 ຄົ້ນຫາຕາມຊື່ສິນຄ້າ, ລະຫັດ SKU, IMEI, ຊື່ຜູ້ຂາຍ ຫຼື ລະຫັດຜູ້ຂາຍ..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none shadow-sm"
           />
         </div>
       </div>

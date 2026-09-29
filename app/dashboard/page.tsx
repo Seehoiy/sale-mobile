@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getSession, SessionUser, isAdmin } from "@/lib/session";
+import { getSession, SessionUser, isAdmin, getAuthHeaders } from "@/lib/session";
 import { formatKip } from "@/lib/utils";
 
 type Branch = { id: string; name: string; code: string };
@@ -49,7 +49,9 @@ export default function DashboardPage() {
   const fetchStats = async (bId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/dashboard/stats?branchId=${bId}`);
+      const res = await fetch(`/api/dashboard/stats?branchId=${bId}`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -88,9 +90,9 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6 space-y-6">
-      {/* Header section */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
+    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6 space-y-6 font-sans">
+      {/* Header section with Branch Selector on the Right */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-900 tracking-wide flex items-center gap-2">
             📊 ພາບລວມທຸລະກິດ (Dashboard Overview)
@@ -108,8 +110,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Branch Filter Selector */}
-        <div className="w-full sm:w-72 bg-gray-50 p-2.5 rounded-xl border border-gray-200 shadow-sm">
+        {/* Branch Filter Selector on the Right */}
+        <div className="w-full sm:w-72 bg-gray-50 p-2.5 rounded-xl border border-gray-200 shadow-sm shrink-0">
           <label className="text-gray-600 text-[11px] block mb-1 font-semibold">
             {admin ? "ເລືອກສາຂາເພື່ອເບິ່ງຂໍ້ມູນ (Branch Filter)" : "ສາຂາທີ່ລັອກອິນ (Current Branch)"}
           </label>
@@ -130,7 +132,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Active branch display notice */}
-      <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5 text-xs text-blue-900">
+      <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5 text-xs text-blue-900 shadow-sm">
         <span className="font-semibold">
           📍 ກຳລັງສະແດງຂໍ້ມູນ:{" "}
           <span className="font-bold underline text-blue-700">

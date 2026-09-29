@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // 1. API ແກ້ໄຂຊື່ໝວດໝູ່ (PATCH)
 export async function PATCH(
   req: Request,

@@ -82,7 +82,7 @@ export default function MenuPage() {
           <div className="flex items-baseline justify-between flex-wrap gap-2">
             <div>
               <h1 className="font-display text-3xl font-black text-blue-700 italic tracking-wide">
-                Buy-Sell Products 
+                Buy-Sale Products 
               </h1>
               <p className="text-xs text-gray-600 mt-1">
                 ສາຂາປະຈຳການ: <span className="text-gray-900 font-bold">{session.branchName}</span>

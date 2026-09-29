@@ -1,54 +1,59 @@
 import { prisma } from "@/lib/prisma";
 import { startOfDay } from "date-fns";
 import { NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/dashboard/stats?branchId=...
 export async function GET(req: Request) {
+
+  const apiStart = Date.now();
+
   try {
     const { searchParams } = new URL(req.url);
     const branchId = searchParams.get("branchId");
+    const authUser = await getAuthUser(req);
 
     const today = startOfDay(new Date());
 
-    const isFiltered = branchId && branchId !== "ALL";
+    let targetBranchId: string | null = null;
+    if (authUser && authUser.role === "MANAGER") {
+      targetBranchId = authUser.branchId;
+    } else if (branchId && branchId !== "ALL") {
+      targetBranchId = branchId;
+    }
 
-    const inventoryWhere = isFiltered ? { currentBranchId: branchId } : {};
-    const claimWhere = isFiltered ? { branchId } : {};
-    const transferWhere = isFiltered ? { toBranchId: branchId } : {};
-    const saleWhere = isFiltered ? { branchId } : {};
+    const isFiltered = !!targetBranchId;
+
+    const inventoryWhere = isFiltered ?
+      { currentBranchId: targetBranchId! } : {};
+
+    const claimWhere = isFiltered ?
+      { branchId: targetBranchId! } : {};
+
+    const transferWhere = isFiltered ?
+      { toBranchId: targetBranchId! } : {};
+
+    const saleWhere = isFiltered ?
+      { branchId: targetBranchId! } : {};
 
     const [
-      inStock,
-      secondHand,
-      inRepair,
+      inventoryByStatus,
       pendingClaims,
       branches,
       pendingTransfers,
       todaySales,
     ] = await Promise.all([
-      prisma.inventoryItem.count({
-        where: {
-          status: "IN_STOCK",
-          ...inventoryWhere,
+      prisma.inventoryItem.groupBy({
+        by: ["status"],
+        where: inventoryWhere,
+        _count: {
+          _all: true,
         },
       }),
 
-      prisma.inventoryItem.count({
-        where: {
-          status: "SECOND_HAND",
-          ...inventoryWhere,
-        },
-      }),
-
-      prisma.inventoryItem.count({
-        where: {
-          status: "IN_REPAIR",
-          ...inventoryWhere,
-        },
-      }),
-
+      //Pending Claims
       prisma.claimRequest.count({
         where: {
           status: {
@@ -58,16 +63,22 @@ export async function GET(req: Request) {
         },
       }),
 
+      //Active Branches
       prisma.branch.findMany({
-        where: { isActive: true },
+        where: {
+          isActive: true
+        },
         select: {
           id: true,
           name: true,
           code: true,
         },
-        orderBy: { name: "asc" },
+        orderBy: {
+          name: "asc"
+        },
       }),
 
+      //Pending Transfers
       prisma.stockTransfer.count({
         where: {
           status: "IN_TRANSIT",
@@ -75,6 +86,7 @@ export async function GET(req: Request) {
         },
       }),
 
+      // Today's Sales
       prisma.sale.aggregate({
         where: {
           createdAt: {
@@ -89,6 +101,34 @@ export async function GET(req: Request) {
       }),
     ]);
 
+    //GroupBy ໃຫ້ເປັນ count
+    let inStock = 0;
+    let secondHand = 0;
+    let inRepair = 0;
+
+    for (const row of inventoryByStatus) {
+      const count = row._count._all;
+
+      if (row.status === "IN_STOCK") {
+        inStock = count;
+      }
+
+      if (row.status === "SECOND_HAND") {
+        secondHand = count;
+      }
+
+      if (row.status === "IN_REPAIR") {
+        inRepair = count;
+      }
+    }
+
+    //Log performance
+    const totalTime = Date.now() - apiStart;
+
+    console.log(
+      `[Dashboard Status] inventory=${inventoryByStatus.length} status | total=${totalTime}ms`
+    );
+
     return NextResponse.json({
       inStock,
       secondHand,
@@ -96,6 +136,7 @@ export async function GET(req: Request) {
       pendingClaims,
       branches,
       pendingTransfers,
+
       todaySales: {
         count: todaySales._count ?? 0,
         total: Number(todaySales._sum.total ?? 0),

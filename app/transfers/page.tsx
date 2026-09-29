@@ -74,10 +74,10 @@ export default function TransfersPage() {
   return (
     <div className="min-h-screen bg-white text-gray-100 p-4 md:p-6 space-y-6">
       <div className="border-b border-neutral-800 pb-4">
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-blue-500 tracking-wide">
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-700 tracking-wide">
           🔄 ໂອນຍ້າຍສິນຄ້າລະຫວ່າງສາຂາ (Stock Transfers)
         </h1>
-        <p className="text-gray-600 text-xs md:text-sm mt-1">
+        <p className="text-blue-700 font-semibold">
           ໂອນ IMEI ຈາກສາງສາຂາໜຶ່ງໄປອີກສາຂາໜຶ່ງ ພ້ອມບັນທຶກປະຫວັດອັດໂນມັດ
         </p>
       </div>
