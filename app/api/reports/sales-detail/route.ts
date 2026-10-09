@@ -14,10 +14,12 @@ export async function GET(req: Request) {
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
 
+  // ⚡ BACKEND COMPUTATION & SECURITY OPTIMIZATION:
+  // 1) ໃຊ້ getAuthUser ເພື່ອກວດສອບສິດ (MANAGER ເບິ່ງໄດ້ສະເພາະສາຂາຕົນເອງ, ADMIN ເບິ່ງໄດ້ທັງໝົດ)
+  // 2) ຄຳນວນ Aggregate ລວມຢູ່ DB (prisma.sale.aggregate) ເພື່ອຄວາມສະຖຽນ ແລະ ເລັ່ງຄວາມໄວ
   const authUser = await getAuthUser(req);
   const whereClause: any = {};
 
-  // 🛡️ Security & Access Control:
   if (authUser && authUser.role === "MANAGER") {
     whereClause.branchId = authUser.branchId;
   } else if (branchId && branchId !== "ALL") {
@@ -41,83 +43,94 @@ export async function GET(req: Request) {
 
   const dbStart = Date.now();
 
-  const sales = await prisma.sale.findMany({
-    where: whereClause,
-    select: {
-      id: true,
-      invoiceNo: true,
-      billNo: true,
-      createdAt: true,
-      branchId: true,
-
-      employee: {
-        select: {
-          id: true,
-          empCode: true,
-          fullName: true,
-        },
+  // 🚀 ທຳການຄຳນວນຢູ່ Database (Parallel DB Queries) ໂດຍສົ່ງຄ່າ Aggregate ຄຳນວນແລ້ວຈາກ Backend ໄປ Frontend
+  const [salesAggregate, sales] = await Promise.all([
+    prisma.sale.aggregate({
+      where: whereClause,
+      _sum: {
+        total: true,
       },
-
-      branch: {
-        select: {
-          name: true,
-        },
+      _count: {
+        id: true,
       },
+    }),
+    prisma.sale.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        invoiceNo: true,
+        billNo: true,
+        createdAt: true,
+        branchId: true,
 
-      customer: {
-        select: {
-          fullName: true,
+        employee: {
+          select: {
+            id: true,
+            empCode: true,
+            fullName: true,
+          },
         },
-      },
 
-      items: {
-        select: {
-          productId: true,
-          quantity: true,
-          unitPrice: true,
-          discount: true,
+        branch: {
+          select: {
+            name: true,
+          },
+        },
 
-          product: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
+        customer: {
+          select: {
+            fullName: true,
+          },
+        },
 
-              category: {
-                select: {
-                  name: true,
+        items: {
+          select: {
+            productId: true,
+            quantity: true,
+            unitPrice: true,
+            discount: true,
+
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+
+                category: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            inventoryItem: {
+              select: {
+                imei1: true,
+
+                warranty: {
+                  select: {
+                    durationMonths: true,
+                  },
                 },
               },
             },
           },
-          inventoryItem: {
-            select: {
-              imei1: true,
-
-              warranty: {
-                select: {
-                  durationMonths: true,
-                },
-              },
-            },
-          },
         },
       },
-    },
-    orderBy: { 
-      createdAt: "desc" 
-    },
-    take: 500,
-  });
+      orderBy: { 
+        createdAt: "desc" 
+      },
+      take: 500,
+    }),
+  ]);
 
   const dbTime = Date.now() - dbStart;
   console.log(
-    `[Sale Detail] DB query: ${dbTime}ms | sales=${sales.length}`
+    `[Sale Detail] DB Query & Aggregate: ${dbTime}ms | Total Sales=${sales.length}`
   );
 
- const processingStart = Date.now();
+  const processingStart = Date.now();
   const itemizedList: any[] = [];
-  let grandTotalAmount = 0;
   let totalItemsCount = 0;
 
   for (const s of sales) {
@@ -125,7 +138,6 @@ export async function GET(req: Request) {
       const lineTotal = Number(item.unitPrice) *
        (item.quantity || 1) - Number(item.discount || 0);
 
-      grandTotalAmount += lineTotal;
       totalItemsCount += item.quantity || 1;
 
       itemizedList.push({
@@ -135,19 +147,19 @@ export async function GET(req: Request) {
         createdAt: s.createdAt,
         branchId: s.branchId,
 
-        branchName: s.branch.name,
-        sellerId: s.employee.id,
-        sellerName: s.employee.fullName,
-        sellerCode: s.employee.empCode,
+        branchName: s.branch?.name || "-",
+        sellerId: s.employee?.id || "-",
+        sellerName: s.employee?.fullName || "-",
+        sellerCode: s.employee?.empCode || "-",
 
         customerName: s.customer?.fullName || "ລູກຄ້າທົ່ວໄປ",
 
         productId: item.productId,
-        productName: item.product.name,
+        productName: item.product?.name || "ສິນຄ້າອື່ນໆ",
 
-        sku: item.product.sku,
+        sku: item.product?.sku || "-",
 
-        categoryName: item.product.category?.name || "-",
+        categoryName: item.product?.category?.name || "-",
 
         imei: item.inventoryItem?.imei1 || null,
 
@@ -164,22 +176,14 @@ export async function GET(req: Request) {
     }
   }
   const processingTime = Date.now() - processingStart;
-
   const totalTime = Date.now() - apiStart;
 
-  console.log(
-    `[Sale Detail] Processing: ${processingTime}ms`
-  );
-
-  console.log(
-    `[Sale Detail] items=${itemizedList.length} | total=${totalTime}ms`
-  );
-
+  // 💡 ສົ່ງຂໍ້ມູນ summary ທີ່ຄຳນວນຈາກ Database ໂດຍກົງ ໄປຫາ Frontend
   return Response.json({
     summary: {
-      totalBillCount: sales.length,
+      totalBillCount: salesAggregate._count.id ?? 0,
       totalItemsCount,
-      grandTotalAmount,
+      grandTotalAmount: Number(salesAggregate._sum.total ?? 0),
     },
     items: itemizedList,
   });
@@ -193,7 +197,8 @@ export async function GET(req: Request) {
   return Response.json(
     {
       error: error.message,
-    }
+    },
+    { status: 500 }
   );
 }
 }

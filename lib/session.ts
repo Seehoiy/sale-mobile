@@ -40,10 +40,10 @@ export function getAuthHeaders(): Record<string, string> {
   const session = getSession();
   if (!session) return {};
   const headers: Record<string, string> = {};
-  if (session.token) {
+  if (session.token && session.token !== "undefined" && session.token !== "null") {
     headers["Authorization"] = `Bearer ${session.token}`;
   }
-  headers["x-session-user"] = JSON.stringify(session);
+  headers["x-session-user"] = encodeURIComponent(JSON.stringify(session));
   return headers;
 }
 

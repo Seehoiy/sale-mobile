@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     const authUser = await getAuthUser(req);
     const whereClause: any = {};
 
-    // 🛡️ Security & Role 
+    // 🛡️ Security & Role Control: ປ້ອງກັນ MANAGER ບໍ່ໃຫ້ເບິ່ງຍອດຂາຍຂອງສາຂາອື່ນ
     if (authUser && authUser.role === "MANAGER") {
       whereClause.branchId = authUser.branchId;
     } else if (branchId && branchId !== "ALL") {
@@ -27,16 +27,22 @@ export async function GET(req: Request) {
       whereClause.createdAt = {};
 
       if (startDate) {
-        whereClause.createdAt.gte = new Date(`${startDate}T00:00:00.000z`);
+        const dStart = new Date(startDate);
+        dStart.setHours(0, 0, 0, 0);
+        whereClause.createdAt.gte = dStart;
       }
 
       if (endDate) {
-        whereClause.createdAt.lte = new Date(`${endDate}T23:59:59.999z`);
+        const dEnd = new Date(endDate);
+        dEnd.setHours(23, 59, 59, 999);
+        whereClause.createdAt.lte = dEnd;
       }
     }
 
     const groupByStart = Date.now();
 
+    // ⚡ BACKEND DB AGGREGATION: ຄຳນວນຍອດຂາຍລວມ ແລະ ຈຳນວນໃບບິນ ຕາມພະນັກງານ ຢູ່ Database (Prisma groupBy)
+    // ເຮັດໃຫ້ສົ່ງຂໍ້ມູນຜ່ານການລວມຄິດໄລ່ຈາກ Backend ເທົ່ານັ້ນ ບໍ່ຕ້ອງປະມວນຜົນຢູ່ Frontend
     const groupedSales = await prisma.sale.groupBy({
       by: ["employeeId"],
       where: whereClause,

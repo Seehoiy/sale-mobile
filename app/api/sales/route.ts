@@ -81,21 +81,16 @@ export async function GET(req: Request) {
   return Response.json(sales);
 }
 
-// POST /api/sales — ອອກບິນ POS (Optimized & 5-Minute Time Limit Enforced)
+// POST /api/sales — ອອກບິນ POS
 export async function POST(req: Request) {
   const body = await req.json();
-  const { branchId, employeeId, customerId, items, payments, clientTimestamp } = body;
+  const { branchId, employeeId, customerId, items, payments } = body;
 
   if (!branchId || !employeeId || !Array.isArray(items) || items.length === 0) {
     return jsonError("branchId, employeeId, items[] ຈຳເປັນ");
   }
   if (!Array.isArray(payments) || payments.length === 0) {
     return jsonError("payments[] ຈຳເປັນ ຢ່າງໜ້ອຍ 1 ລາຍການ");
-  }
-
-  // ⏱️ ກຳນົດເວລາ 5 ນາທີ (300,000 ms) ເປັນຂີດຈຳກັດອາຍຸໃບບິນ
-  if (clientTimestamp && Date.now() - Number(clientTimestamp) > 5 * 60 * 1000) {
-    return jsonError("⚠️ ໃບບິນນີ້ໝົດເວລາ (ເກີນ 5 ນາທີ). ກະລຸນາອອກໃບບິນໃໝ່", 400);
   }
 
   const discount = Number(body.discount ?? 0);
@@ -118,7 +113,7 @@ export async function POST(req: Request) {
             if (line.inventoryItemId) {
               const invItem: any = invMap.get(line.inventoryItemId);
               if (!invItem) throw new Error(`ບໍ່ພົບເຄື່ອງ IMEI: ${line.inventoryItemId}`);
-              if (invItem.status !== "IN_STOCK")
+              if (invItem.status !== "IN_STOCK" && invItem.status !== "SECOND_HAND")
                 throw new Error(`ເຄື່ອງ IMEI ${invItem.imei1} ບໍ່ພ້ອມຂາຍ (ສະຖານະ: ${invItem.status})`);
               if (invItem.currentBranchId !== branchId)
                 throw new Error(`ເຄື່ອງ IMEI ${invItem.imei1} ບໍ່ໄດ້ຢູ່ສາຂານີ້`);
@@ -126,7 +121,30 @@ export async function POST(req: Request) {
           }
         }
 
-        // 2) ຄິດໄລ່ຍອດລວມ
+        // 2) ກວດສອບ & ສ້າງ Fallback Service Product ຖ້າເປັນລາຍການບໍລິການທີ່ບໍ່ມີ productId
+        let defaultServiceProductId: string | null = null;
+        const hasMissingProductId = items.some((l: any) => !l.productId);
+
+        if (hasMissingProductId) {
+          let serviceProduct = await tx.product.findFirst({ where: { sku: "SERVICE-GENERIC" } });
+          if (!serviceProduct) {
+            let cat = await tx.category.findFirst();
+            if (!cat) cat = await tx.category.create({ data: { name: "ບໍລິການ" } });
+            serviceProduct = await tx.product.create({
+              data: {
+                sku: "SERVICE-GENERIC",
+                name: "ບໍລິການອື່ນໆ (Service)",
+                categoryId: cat.id,
+                trackingType: "QUANTITY",
+                costPrice: 0,
+                sellPrice: 0,
+              },
+            });
+          }
+          defaultServiceProductId = serviceProduct.id;
+        }
+
+        // 3) ຄິດໄລ່ຍອດລວມ subtotal, VAT, discount, ແລະ total ຢູ່ Backend
         const subtotal = items.reduce(
           (sum: number, l: any) => sum + Number(l.unitPrice) * Number(l.quantity ?? 1) - Number(l.discount ?? 0),
           0
@@ -137,10 +155,10 @@ export async function POST(req: Request) {
         const total = beforeVat + vatAmount;
 
         const paidTotal = payments.reduce((s: number, p: any) => s + Number(p.amount), 0);
-        if (Math.round(paidTotal) !== Math.round(total))
+        if (Math.abs(paidTotal - total) > 1)
           throw new Error(`ຍອດຊຳລະ (${paidTotal}) ບໍ່ຕົງກັບຍອດລວມ (${total})`);
 
-        // 3) ສ້າງໃບບິນດ້ວຍລະຫັດ collision-proof
+        // 4) ສ້າງໃບບິນດ້ວຍລະຫັດ collision-proof (Atomic DB Transaction)
         const invCode = genCode("INV");
         const billCode = genCode("BILL");
 
@@ -158,7 +176,7 @@ export async function POST(req: Request) {
             total,
             items: {
               create: items.map((l: any) => ({
-                productId: l.productId,
+                productId: l.productId || defaultServiceProductId,
                 inventoryItemId: l.inventoryItemId ?? null,
                 quantity: l.quantity ?? 1,
                 unitPrice: l.unitPrice,
@@ -181,7 +199,8 @@ export async function POST(req: Request) {
           },
         });
 
-        // 4) ຕັດສະຕັອກ IMEI & ສ້າງ Warranty
+        // 5) ⚡ BATCH UPDATE DB: ຕັດສະຕັອກ IMEI & ສ້າງ Warranty ຜ່ານ Transaction
+        const imeiHistoryRecords: any[] = [];
         for (const line of items) {
           const itemWarranty =
             line.warrantyMonths !== undefined ? Number(line.warrantyMonths) : globalWarrantyMonths;
@@ -192,16 +211,14 @@ export async function POST(req: Request) {
               data: { status: "SOLD" },
             });
 
-            await tx.imeiHistory.create({
-              data: {
-                inventoryItemId: line.inventoryItemId,
-                eventType: "SALE",
-                fromBranchId: branchId,
-                refType: "Sale",
-                refId: sale.id,
-                actorId: employeeId,
-                note: `ຂາຍອອກໃນໃບບິນ ${sale.invoiceNo} ໂດຍຜູ້ຂາຍ ${sale.employee?.fullName} (${sale.employee?.empCode})`,
-              },
+            imeiHistoryRecords.push({
+              inventoryItemId: line.inventoryItemId,
+              eventType: "SALE",
+              fromBranchId: branchId,
+              refType: "Sale",
+              refId: sale.id,
+              actorId: employeeId,
+              note: `ຂາຍອອກໃນໃບບິນ ${sale.invoiceNo} ໂດຍຜູ້ຂາຍ ${sale.employee?.fullName} (${sale.employee?.empCode})`,
             });
 
             if (itemWarranty > 0) {
@@ -224,6 +241,12 @@ export async function POST(req: Request) {
               data: { quantity: { decrement: line.quantity ?? 1 } },
             });
           }
+        }
+
+        if (imeiHistoryRecords.length > 0) {
+          await tx.imeiHistory.createMany({
+            data: imeiHistoryRecords,
+          });
         }
 
         if (body.tradeInId) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSession, SessionUser, isAdmin } from "@/lib/session";
+import { getSession, SessionUser, isAdmin, getAuthHeaders } from "@/lib/session";
 
 type Branch = {
   id: string;
@@ -62,7 +62,7 @@ export default function BranchesPage() {
   const adminRole = isAdmin(session);
 
   function loadBranches() {
-    fetch("/api/branches?showAll=true")
+    fetch("/api/branches?showAll=true", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data: Branch[]) => {
         if (Array.isArray(data)) {
@@ -74,7 +74,7 @@ export default function BranchesPage() {
   }
 
   function loadEmployees() {
-    fetch("/api/employees")
+    fetch("/api/employees", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setEmployees(data);

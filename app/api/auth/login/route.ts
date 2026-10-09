@@ -14,6 +14,18 @@ type LockRecord = {
 
 const loginAttempts = new Map<string, LockRecord>();
 
+function getFormattedTimeMessage(remainingSec: number): string {
+  const hours = Math.floor(remainingSec / 3600);
+  const minutes = Math.floor((remainingSec % 3600) / 60);
+  const second = remainingSec % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours} ຊົ່ວໂມງ`);
+  if (minutes > 0) parts.push(`${minutes} ນາທີ`);
+  if (second > 0 || parts.length ===0) parts.push(`${second} ວິນາທີ`);
+
+  return parts.join(" ");
+}
 function checkLockStatus(username: string): { isLocked: boolean; message?: string } {
   const key = username.toLowerCase().trim();
   const record = loginAttempts.get(key);
@@ -29,24 +41,16 @@ function checkLockStatus(username: string): { isLocked: boolean; message?: strin
 
   if (record.lockedUntil && now < record.lockedUntil) {
     const remainingSec = Math.ceil((record.lockedUntil - now) / 1000);
-    if (remainingSec > 3600) {
-      const hours = Math.ceil(remainingSec / 3600);
+    const timeText = getFormattedTimeMessage(remainingSec);
       return {
         isLocked: true,
-        message: `🚫 ທ່ານລັອກອິນຜິດ 5 ຄັ້ງ! ລະບົບຖືກລັອກ. ກະລຸນາລອງໃໝ່ໃນມື້ອື່ນ (${hours} ຊົ່ວໂມງ)`,
+        message: `🚫 ທ່ານລັອກອິນຜິດເກີນກຳນົດ! ລະບົບຖືກລັອກ. ກະລຸນາລອງໃໝ່ໃນມື້ອື່ນ (${timeText} ຊົ່ວໂມງ)`,
       };
-    } else {
-      return {
-        isLocked: true,
-        message: `⚠️ ທ່ານລັອກອິນຜິດ 3 ຄັ້ງ! ລະບົບຖືກລັອກ 1 ນາທີ. ກະລຸນາລໍຖ້າ ${remainingSec} ວິນາທີ ແລ້ວລອງໃໝ່`,
-      };
-    }
   }
-
   return { isLocked: false };
 }
 
-function recordFailedLogin(username: string): string {
+function recordFailedLogin(username: string): { message: string; lockedUntil?: number } {
   const key = username.toLowerCase().trim();
   const now = Date.now();
   const record = loginAttempts.get(key) || { attempts: 0, lastAttempt: now };
@@ -54,24 +58,37 @@ function recordFailedLogin(username: string): string {
   record.attempts += 1;
   record.lastAttempt = now;
 
-  if (record.attempts >= 5) {
+  let message = "";
+
+  if (record.attempts >= 12) {
     // ລັອກຮອດ 24 ຊົ່ວໂມງ / ມື້ອື່ນ
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     record.lockedUntil = tomorrow.getTime();
     loginAttempts.set(key, record);
-    return `🚫 ທ່ານລັອກອິນຜິດ 5 ຄັ້ງ! ລະບົບຖືກລັອກ. ກະລຸນາລອງໃໝ່ໃນມື້ອື່ນ`;
+    return { message: `🚫 ທ່ານລັອກອິນຜິດ 12 ຄັ້ງ! ລະບົບຖືກລັອກ. ກະລຸນາລອງໃໝ່ໃນມື້ອື່ນ`, lockedUntil: record.lockedUntil };
+  } else if (record.attempts >= 9) {
+    record.lockedUntil = now + 4 * 60 * 60 * 1000;
+    loginAttempts.set(key,record);
+    return { message: `🚫  ທ່ານລັອກອິນຜິດ 9 ຄັ້ງ! ລະບົບຖືກລັອກ 4 ຊົ່ວໂມງ. ກະລຸນາລໍຖ້າ 4 ຊົ່ວໂມງ ແລ້ວລອງໃໝ່`, lockedUntil: record.lockedUntil };
+  }else if (record.attempts >= 7){
+    record.lockedUntil = now + 60 * 60 * 1000;
+    loginAttempts.set(key,record);
+    return { message: `🚫 ທ່ານລັອກອິນຜິດ 7 ຄັ້ງ! ລະບົບຖືກລັອກ 1 ຊົ່ວໂມງ. ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ ແລ້ວລອງໃໝ່`, lockedUntil: record.lockedUntil };
+  } else if (record.attempts >= 5) {
+    record.lockedUntil = now + 5 * 60 * 1000;
+    loginAttempts.set(key, record);
+    return { message: `⚠️ ທ່ານລັອກອິນຜິດ 5 ຄັ້ງ! ລະບົບຖືກລັອກ 5 ນາທີ. ກະລຸນາລໍຖ້າ 5 ນາທີ ແລ້ວລອງໃຫມ່`, lockedUntil: record.lockedUntil };
   } else if (record.attempts >= 3) {
-    // ລັອກ 1 ນາທີ (60 ວິນາທີ)
     record.lockedUntil = now + 60 * 1000;
     loginAttempts.set(key, record);
-    return `⚠️ ທ່ານລັອກອິນຜິດ 3 ຄັ້ງ! ລະບົບຖືກລັອກ 1 ນາທີ. ກະລຸນາລໍຖ້າ 1 ນາທີ ແລ້ວລອງໃໝ່`;
+    return { message: `⚠️ ທ່ານລັອກອິນຜິດ 3 ຄັ້ງ! ລະບົບຖືກລັອກ 1 ນາທີ. ກະລຸນາລໍຖ້າ 1 ນາທີ ແລ້ວລອງໃໝ່`, lockedUntil: record.lockedUntil };
   }
 
   loginAttempts.set(key, record);
   const remaining = 3 - record.attempts;
-  return `ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ (ຜິດໄປແລ້ວ ${record.attempts} ຄັ້ງ, ເຫຼືອໂອກາດອີກ ${remaining > 0 ? remaining : 0} ຄັ້ງ)`;
+  return { message: `ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ (ຜິດໄປແລ້ວ ${record.attempts} ຄັ້ງ, ເຫຼືອໂອກາດອີກ ${remaining > 0 ? remaining : 0} ຄັ້ງ)` };
 }
 
 function clearFailedLogin(username: string) {
@@ -86,9 +103,17 @@ export async function POST(req: Request) {
   if (!username || !password) return jsonError("ກະລຸນາປ້ອນ User Name ແລະ Password");
 
   // 1) ກວດສອບວ່າຖືກລັອກຍ້ອນລັອກອິນຜິດ 3 ຫຼື 5 ຄັ້ງຫຼືບໍ່
+  const key = username.toLowerCase().trim();
+  const record = loginAttempts.get(key);
   const lockStatus = checkLockStatus(username);
+
   if (lockStatus.isLocked) {
-    return jsonError(lockStatus.message!, 429);
+    return Response.json(
+      { error: lockStatus.message,
+        lockedUntil: record?.lockedUntil
+       },
+      { status: 429 }
+    );
   }
 
   const employee = await prisma.employee.findUnique({
@@ -97,10 +122,11 @@ export async function POST(req: Request) {
   });
 
   if (!employee || !employee.isActive) {
-    const errMessage = recordFailedLogin(username);
-    return jsonError(errMessage, 401);
+    const { message, lockedUntil } = recordFailedLogin(username);
+    return Response.json({ error: message, lockedUntil },
+      { status: 401 }
+    );
   }
-
   // 2) ຂໍ້ກຳນົດ: ອະນຸຍາດໃຫ້ສະເພາະ ແອັດມິນ (ADMIN) ແລະ ຜູ້ຈັດການຮ້ານ (MANAGER) ເຂົ້າສູ່ລະບົບເທົ່ານັ້ນ
   if (employee.role !== "ADMIN" && employee.role !== "MANAGER") {
     return jsonError("ອະນຸຍາດໃຫ້ສະເພາະ ແອັດມິນ (ADMIN) ແລະ ຜູ້ຈັດການຮ້ານ (MANAGER) ເຂົ້າສູ່ລະບົບເທົ່ານັ້ນ", 403);
@@ -108,9 +134,12 @@ export async function POST(req: Request) {
 
   // 3) ກວດສອບລະຫັດຜ່ານ
   const isValid = verifyPassword(password, employee.passwordHash);
+
   if (!isValid) {
-    const errMessage = recordFailedLogin(username);
-    return jsonError(errMessage, 401);
+    const { message, lockedUntil } = recordFailedLogin(username);
+    return Response.json({ error: message, lockedUntil },
+      { status: 401 }
+    );
   }
 
   // ລັອກອິນຖືກຕ້ອງ -> ລ້າງປະຫວັດການລັອກອິນຜິດ

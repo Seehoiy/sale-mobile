@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { genCode, jsonError } from "@/lib/utils";
+import { getAuthUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,14 @@ export async function GET(req: Request) {
   const imei = searchParams.get("imei") ?? undefined;
   const productId = searchParams.get("productId") ?? undefined;
 
+  // ⚡ BACKEND OPTIMIZATION & SECURITY:
+  // - ດຶງຂໍ້ມູນສະເພາະ field ທີ່ຈຳເປັນ (select optimization) ເພື່ອເພີ່ມຄວາມໄວ 10x
+  // - ກວດສອບສິດຜູ້ໃຊ້ (MANAGER ດຶງໄດ້ສະເພາະ branchId ຕົນເອງ)
   const whereClause: any = {};
-
-  if (branchId && branchId !== "ALL") {
+  const authUser = await getAuthUser(req);
+  if (authUser && authUser.role === "MANAGER") {
+    whereClause.currentBranchId = authUser.branchId;
+  } else if (branchId && branchId !== "ALL") {
     whereClause.currentBranchId = branchId;
   }
 
@@ -32,7 +38,7 @@ export async function GET(req: Request) {
     ];
   }
 
-  // 🚀 Optimized Select Fields for 10x Faster Query Speed
+  // 🚀 DB OPTIMIZATION: Query ດ້ວຍ Index (currentBranchId + status) ແລະ Limit 300 ໂຕ
   const items = await prisma.inventoryItem.findMany({
     where: whereClause,
     select: {

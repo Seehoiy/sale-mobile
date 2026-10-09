@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ImeiChip from "@/components/ImeiChip";
-import { getSession, SessionUser, isAdmin } from "@/lib/session";
+import { getSession, SessionUser, isAdmin, getAuthHeaders } from "@/lib/session";
 
 type Branch = { id: string; name: string };
 type InvItem = {
@@ -44,7 +44,7 @@ function InventoryContent() {
     const s = getSession();
     setSession(s);
 
-    fetch("/api/branches")
+    fetch("/api/branches", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -73,7 +73,7 @@ function InventoryContent() {
     if (status) params.set("status", status);
     if (imei) params.set("imei", imei);
 
-    fetch(`/api/inventory?${params}`)
+    fetch(`/api/inventory?${params}`, { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setItems(data);

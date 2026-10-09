@@ -70,7 +70,7 @@ export default function PrintInvoicePage() {
 
       {/* Footer */}
       <div className="text-center text-[10px] mt-4 pt-2 border-t border-dashed border-black">
-        <p>ຂໍຂອບໃຈທີ່ໃຊ້ອຸດໜູນ</p>
+        <p>ຂໍຂອບໃຈລູກຄ້າທີ່ຫນ້າຮັກ</p>
         <p>ກວດກາສິນຄ້າກ່ອນອອກຈາກຮ້ານ</p>
       </div>
     </div>

@@ -223,11 +223,6 @@ export default function PosPage() {
       return;
     }
 
-    if (checkoutStartTime && Date.now() - checkoutStartTime > 5 * 60 * 1000) {
-      setPinError("⚠️ ໝົດເວລາ 5 ນາທີ ໃນການອອກໃບບິນ! ກະລຸນາອອກໃບບິນໃໝ່.");
-      return;
-    }
-
     const currentEmp = employees.find((e) => e.id === selectedEmpId);
     if (!currentEmp) {
       setPinError("ບໍ່ພົບຂໍ້ມູນຜູ້ຂາຍ");

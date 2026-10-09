@@ -130,7 +130,7 @@ export default function PosReceiptPrint({ data }: { data: ReceiptData | null }) 
       </div>
 
       <div className="text-center text-[9px] mt-3 pt-2 border-t border-gray-300 space-y-0.5">
-        <p className="font-semibold">ຂໍຂອບໃຈທີ່ໃຊ້ອຸດໜູນ / Thank You</p>
+        <p className="font-semibold">ຂໍຂອບໃຈລູກຄ້າທີ່ໜ້າຮັກ / Thanks</p>
         <p className="text-[8px] text-gray-500">ກະລຸນາກວດເຊັກສິນຄ້າ ແລະ ເງິນທອນກ່ອນອອກຈາກຮ້ານ</p>
       </div>
     </div>

@@ -137,7 +137,9 @@ model InventoryItem {
   stockTransferItems  StockTransferItem[]
   warranty            Warranty?
 
+  // ⚡ DB INDEX OPTIMIZATION: ເພີ່ມ composite index ເພື່ອເລັ່ງຄວາມໄວໃນການ Filter & Query ສາງ IMEI
   @@index([currentBranchId, status])
+  @@index([productId, currentBranchId, status])
   @@map("inventory_items")
 }
 
@@ -155,7 +157,9 @@ model ImeiHistory {
   actor           Employee?     @relation("HistoryActor", fields: [actorId], references: [id])
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
 
+  // ⚡ DB INDEX OPTIMIZATION: ເພີ່ມ index ສຳລັບດຶງປະຫວັດຕາມ IMEI ແລະ ວັນທີ
   @@index([inventoryItemId])
+  @@index([inventoryItemId, createdAt])
   @@map("imei_history")
 }
 
@@ -196,7 +200,7 @@ model PurchaseOrderItem {
   productId       String
   quantity        Int
   costPrice       Decimal        @db.Decimal(12, 2)
-  inventoryItem   InventoryItem?
+  inventoryItem   InventoryItem[]
   product         Product        @relation(fields: [productId], references: [id])
   purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
 

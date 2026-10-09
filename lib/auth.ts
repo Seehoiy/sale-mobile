@@ -37,21 +37,26 @@ export async function getAuthUser(req: Request): Promise<AuthUser | null> {
     token = authHeader.substring(7).trim();
   }
 
-  if (!token) {
+  if (!token || token === "undefined" || token === "null" || token === "") {
     token = req.headers.get("x-auth-token") || req.headers.get("x-session-user");
   }
 
-  if (!token) return null;
+  if (!token || token === "undefined" || token === "null" || token === "") return null;
 
   const verified = verifyToken(token);
   if (verified) return verified;
 
   // Fallback parsing for legacy header if raw JSON passed during migration, but verify user exists in DB
   try {
-    const raw = JSON.parse(token);
-    if (raw && raw.employeeId && raw.branchId) {
+    let decodedToken = token;
+    try {
+      decodedToken = decodeURIComponent(token);
+    } catch {}
+    const raw = JSON.parse(decodedToken);
+    const empId = raw.employeeId || raw.id;
+    if (raw && empId) {
       const emp = await prisma.employee.findUnique({
-        where: { id: raw.employeeId },
+        where: { id: empId },
         include: { branch: true },
       });
       if (emp && emp.isActive) {

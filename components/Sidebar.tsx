@@ -38,12 +38,12 @@ export default function Sidebar() {
 
   return (
     
-    <aside className="w-64 shrink-0 border-r border-gray-200 bg-white min-h-screen flex flex-col font-sans">
-      <Link href="/menu" className="px-5 py-5 border-b border-gray-200 block hover:bg-gray-50 transition-colors">
+    <aside className="w-64 shrink-0 border-r border-gray-300 bg-gray-100 min-h-screen flex flex-col font-sans">
+      <Link href="/menu" className="px-5 py-5 border-b border-gray-200 block hover:bg-write-100 transition-colors">
         <div className="font-display text-xl font-extrabold tracking-tight text-blue-700 flex items-center gap-1.5">
           Buy-Sale<span className="text-blue-600">•</span>Products
         </div>
-        <div className="text-[11px] text-gray-800 font-mono mt-0.5">Seehoiy Dev</div>
+        <div className="text-[11px] text-yellow-600 font-mono mt-0.5">Seehoiy Dev</div>
       </Link>
 
       <nav className="flex-1 py-3 space-y-0.5">

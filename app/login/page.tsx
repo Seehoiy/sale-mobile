@@ -15,6 +15,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [lockedUntil, setLockedUntil] = useState<number | null> (null);
+  const [countdownText, setCountdownText] = useState("");
+
   useEffect(() => {
     fetch("/api/branches")
       .then((r) => r.json())
@@ -26,8 +29,43 @@ export default function LoginPage() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!lockedUntil) return;
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = Math.max(0, Math.ceil((lockedUntil - now) / 1000));
+
+      if (diff <= 0) {
+        setLockedUntil(null);
+        setError(null);
+        return;
+      }
+
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+
+      const parts = [];
+      if (h > 0) parts.push(`${h} ຊົ່ວໂມງ`);
+      if (m > 0) parts.push(`${m} ນາທີ`);
+      if (s > 0 || parts.length === 0) parts.push(`${s} ວິນາທີ`);
+
+      setCountdownText(parts.join(" "));
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+
+    if (lockedUntil && Date.now() < lockedUntil) 
+      return;
+
     setError(null);
     setLoading(true);
     try {
@@ -37,7 +75,14 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password, branchId: selectedBranchId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+
+      if (!res.ok) {
+        if (data.lockedUntil) {
+          setLockedUntil(data.lockedUntil);
+        }
+        throw new Error(data.error || "Log In ບໍ່ສຳເລັດ");
+
+      }
 
       if (data.role !== "ADMIN" && data.role !== "MANAGER") {
         throw new Error("ອະນຸຍາດໃຫ້ສະເພາະ ແອັດມິນ (ADMIN) ແລະ ຜູ້ຈັດການຮ້ານ (MANAGER) ເຂົ້າສູ່ລະບົບເທົ່ານັ້ນ");
@@ -105,11 +150,21 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {error && (
+          {lockedUntil && Date.now() < lockedUntil ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg flex items-center gap-2 font-semibold">
+              <span>🚫</span>
+              <span>
+                ທ່ານລັອກອິນຜິດເກີນກຳນົດ! ລະບົບຖືກລັອກ. ກະລຸນາລໍຖ້າອີກ{" "}
+                <strong className="font-mono text-sm text-red-700 underline">{countdownText}</strong> ແລ້ວລອງໃໝ່
+              </span>
+            </div>
+          ) : (
+            error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg flex items-center gap-2 font-semibold">
               <span>⚠️</span>
               <span>{error}</span>
             </div>
+            )
           )}
 
           <div>
@@ -159,7 +214,7 @@ export default function LoginPage() {
             </span>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!(lockedUntil && Date.now() < lockedUntil)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md"
             >
               ✓ {loading ? "ກຳລັງເຂົ້າສູ່ລະບົບ..." : "Log In (ເຂົ້າສູ່ລະບົບ)"}
