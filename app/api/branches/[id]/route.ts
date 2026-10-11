@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
@@ -6,19 +5,34 @@ export const revalidate = 0;
 
 // GET /api/branches/:id
 export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const branch = await prisma.branch.findUnique({ where: { id: params.id } });
-  if (!branch) return jsonError("ບໍ່ພົບສາຂານີ້", 404);
-  return Response.json(branch);
+  try {
+    if (!params?.id || params.id === "[id]") {
+      return jsonError("ID ບໍ່ຖືກຕ້ອງ", 400);
+    }
+
+    const { prisma } = await import("@/lib/prisma");
+    const branch = await prisma.branch.findUnique({ where: { id: params.id } });
+    if (!branch) return jsonError("ບໍ່ພົບສາຂານີ້", 404);
+    return Response.json(branch);
+  } catch (err: any) {
+    return jsonError(err.message ?? "ເກີດຂໍ້ຜິດພາດ", 500);
+  }
 }
 
 // PATCH /api/branches/:id
 // body: { code?, name?, address?, phone?, isActive? }
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const body = await req.json();
-  const branch = await prisma.branch.findUnique({ where: { id: params.id } });
-  if (!branch) return jsonError("ບໍ່ພົບສາຂານີ້", 404);
-
   try {
+    if (!params?.id || params.id === "[id]") {
+      return jsonError("ID ບໍ່ຖືກຕ້ອງ", 400);
+    }
+
+    const body = await req.json();
+    const { prisma } = await import("@/lib/prisma");
+
+    const branch = await prisma.branch.findUnique({ where: { id: params.id } });
+    if (!branch) return jsonError("ບໍ່ພົບສາຂານີ້", 404);
+
     const updated = await prisma.branch.update({
       where: { id: params.id },
       data: {
