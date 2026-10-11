@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // PATCH /api/products/:id
 // body: { name?, brandId?, categoryId?, costPrice?, sellPrice?, isActive? }
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // POST /api/transfers/:id/receive — ສາຂາປາຍທາງຢືນຢັນຮັບເຄື່ອງ
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const transfer = await prisma.stockTransfer.findUnique({

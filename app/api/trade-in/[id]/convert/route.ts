@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // POST /api/trade-in/:id/convert
 // body: { productId, imei1, imei2?, condition, employeeId }
 // ເຄື່ອງເກົ່າທີ່ຮັບເທິນມາ ຈະຖືກບັນທຶກເຂົ້າສະຕັອກ "second-hand" ຂອງສາຂານັ້ນອັດໂນມັດ

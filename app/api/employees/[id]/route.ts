@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 import { hashPassword } from "@/lib/hash";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET /api/employees/:id
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const employee = await prisma.employee.findUnique({
