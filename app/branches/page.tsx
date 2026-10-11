@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { getSession, SessionUser, isAdmin, getAuthHeaders } from "@/lib/session";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type Branch = {
   id: string;
   code: string;
