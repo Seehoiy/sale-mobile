@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/branches/:id
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const branch = await prisma.branch.findUnique({ where: { id: params.id } });
