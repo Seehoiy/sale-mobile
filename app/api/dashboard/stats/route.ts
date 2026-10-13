@@ -27,6 +27,7 @@ export async function GET(req: Request) {
 
     const isFiltered = !!targetBranchId;
 
+<<<<<<< HEAD
     const inventoryWhere = isFiltered ?
       { currentBranchId: targetBranchId! } : {};
 
@@ -46,17 +47,54 @@ export async function GET(req: Request) {
     // ຄຳນວນ Count & Sum ທັງໝົດຢູ່ Database Tier ຜ່ານ Promise.all ເພື່ອຄວາມໄວ 10x ແລະ ເຮັດໃຫ້ Frontend ສະຖຽນ
     const [
       inventoryByStatus,
+=======
+    const repairWhere = isFiltered ? { branchId } : {};
+
+    const [
+      inStock,
+      secondHand,
+      inRepair,
+      inventoryInrepair,
+>>>>>>> dev
       pendingClaims,
       branches,
       pendingTransfers,
       todaySales,
       activeRepairsCount,
     ] = await Promise.all([
+<<<<<<< HEAD
       prisma.inventoryItem.groupBy({
         by: ["status"],
         where: inventoryWhere,
         _count: {
           _all: true,
+=======
+      prisma.inventoryItem.count({
+        where: {
+          status: "IN_STOCK",
+          ...inventoryWhere,
+        },
+      }),
+
+      prisma.inventoryItem.count({
+        where: {
+          status: "SECOND_HAND",
+          ...inventoryWhere,
+        },
+      }),
+
+      prisma.repairJob.count({
+        where: {
+          status: "IN_PROGRESS",
+          ...repairWhere,
+        },
+      }),
+
+      prisma.inventoryItem.count({
+        where: {
+          status: "IN_REPAIR",
+          ...inventoryWhere,
+>>>>>>> dev
         },
       }),
 

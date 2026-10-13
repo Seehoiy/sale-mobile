@@ -15,7 +15,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+<<<<<<< HEAD
   const [lockedUntil, setLockedUntil] = useState<number | null> (null);
+=======
+  // 🔒 ປະກາດ State ສຳລັບລະບົບລັອກອິນ ແລະ ນັບຖອຍຫຼັງ
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+>>>>>>> dev
   const [countdownText, setCountdownText] = useState("");
 
   useEffect(() => {
@@ -29,6 +34,10 @@ export default function LoginPage() {
       });
   }, []);
 
+<<<<<<< HEAD
+=======
+  // 🔄 ຟັງຊັນນັບຖອຍຫຼັງ Real-time
+>>>>>>> dev
   useEffect(() => {
     if (!lockedUntil) return;
 
@@ -62,9 +71,15 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+<<<<<<< HEAD
 
     if (lockedUntil && Date.now() < lockedUntil) 
       return;
+=======
+    
+    // ຖ້າລະບົບຖືກລັອກຢູ່ ບໍ່ໃຫ້ກົດສົ່ງ Request
+    if (lockedUntil && Date.now() < lockedUntil) return;
+>>>>>>> dev
 
     setError(null);
     setLoading(true);
@@ -78,10 +93,19 @@ export default function LoginPage() {
 
       if (!res.ok) {
         if (data.lockedUntil) {
+<<<<<<< HEAD
           setLockedUntil(data.lockedUntil);
         }
         throw new Error(data.error || "Log In ບໍ່ສຳເລັດ");
 
+=======
+          const timestamp = typeof data.lockedUntil === "number" 
+            ? data.lockedUntil 
+            : new Date(data.lockedUntil).getTime();
+          setLockedUntil(timestamp);
+        }
+        throw new Error(data.error || "Log In ບໍ່ສຳເລັດ");
+>>>>>>> dev
       }
 
       if (data.role !== "ADMIN" && data.role !== "MANAGER") {
@@ -150,6 +174,7 @@ export default function LoginPage() {
             </div>
           </div>
 
+<<<<<<< HEAD
           {lockedUntil && Date.now() < lockedUntil ? (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg flex items-center gap-2 font-semibold">
               <span>🚫</span>
@@ -160,10 +185,26 @@ export default function LoginPage() {
             </div>
           ) : (
             error && (
+=======
+          {/* 🔴 ສະແດງແຈ້ງເຕືອນລັອກອິນ ຫຼື Error ປົກກະຕິ */}
+          {lockedUntil && Date.now() < lockedUntil ? (
+>>>>>>> dev
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg flex items-center gap-2 font-semibold">
-              <span>⚠️</span>
-              <span>{error}</span>
+              <span>🚫</span>
+              <span>
+                ລະບົບຖືກລັອກເນື່ອງຈາກລັອກອິນຜິດເກີນກຳນົດ! ກະລຸນາລໍຖ້າອີກ{" "}
+                <strong className="font-mono text-sm underline">{countdownText}</strong> ແລ້ວລອງໃໝ່
+              </span>
             </div>
+<<<<<<< HEAD
+=======
+          ) : (
+            error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg flex items-center gap-2 font-semibold">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+>>>>>>> dev
             )
           )}
 

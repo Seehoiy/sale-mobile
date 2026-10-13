@@ -52,13 +52,16 @@ export async function getAuthUser(req: Request): Promise<AuthUser | null> {
     try {
       decodedToken = decodeURIComponent(token);
     } catch {}
+
     const raw = JSON.parse(decodedToken);
     const empId = raw.employeeId || raw.id;
+
     if (raw && empId) {
       const emp = await prisma.employee.findUnique({
         where: { id: empId },
         include: { branch: true },
       });
+      
       if (emp && emp.isActive) {
         return {
           employeeId: emp.id,

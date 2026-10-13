@@ -85,7 +85,7 @@ export default function DashboardPage() {
     },
     { label: "ເຄື່ອງມືສອງ ລໍຖ້າຂາຍ", value: `${stats.secondHand} ເຄື່ອງ`, href: "/inventory?status=SECOND_HAND" },
     { label: "ຢູ່ໃນຂັ້ນຕອນຊ່ອມ", value: `${stats.inRepair} ເຄື່ອງ`, href: "/repair" },
-    { label: "ເຄລມທີ່ຍັງບໍ່ແກ້ໄຂ", value: `${stats.pendingClaims} ງານ`, href: "/repair" },
+    { label: "ເຄລມທີ່ຍັງບໍ່ແກ້ໄຂ", value: `${stats.pendingClaims} ງານ`, href: "/claims" },
     { label: "ໂອນຍ້າຍທີ່ຍັງບໍ່ຮັບ", value: `${stats.pendingTransfers} ລາຍການ`, href: "/transfers" },
   ];
 

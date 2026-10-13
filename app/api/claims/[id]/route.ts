@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/utils";
 
+<<<<<<< HEAD
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // PATCH /api/claims/:id
 // body: { status: "SENT_TO_CENTER" | "REPAIRED_RETURNED" | "SWAPPED" | "RETURNED_TO_CUSTOMER" | "REJECTED",
 //         swappedNewItemId? }  // ຈຳເປັນຖ້າ status = SWAPPED
+=======
+
+>>>>>>> dev
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();
   const claim = await prisma.claimRequest.findUnique({ where: { id: params.id } });

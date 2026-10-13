@@ -15,6 +15,7 @@ const NAV = [
   { href: "/inventory", label: "ສາງສິນຄ້າ / IMEI", code: "INV" },
   { href: "/trade-in", label: "ຮັບເທິນເຄື່ອງເກົ່າ", code: "TDI" },
   { href: "/repair", label: "ຮັບຊ່ອມ", code: "RPR" },
+  { href: "/claims", label: "ຮັບເຄື່ອງເຄລມ", code: "CLM" },
   { href: "/transfers", label: "ໂອນຍ້າຍສາຂາ", code: "TRF" },
   { href: "/branches", label: "ຈັດການສາຂາ / ພະນັກງານ", code: "BRC" },
   { href: "/reports/sales", label: "ລາຍງານຍອດຂາຍສິນຄ້າ", code: "RPT" },

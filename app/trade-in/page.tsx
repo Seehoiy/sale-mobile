@@ -7,6 +7,7 @@ import { getSession, SessionUser } from "@/lib/session";
 
 type Branch = { id: string; name: string };
 type Product = { id: string; name: string };
+type Customer = {id: string; fullName: string; phone?: string};
 type TradeIn = {
   id: string;
   tradeInNo: string;
@@ -20,6 +21,7 @@ export default function TradeInPage() {
   const [session, setSession] = useState<SessionUser | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [tradeIns, setTradeIns] = useState<TradeIn[]>([]);
   const [form, setForm] = useState({
     branchId: "",
@@ -58,12 +60,19 @@ export default function TradeInPage() {
           loadTradeIns(initialBranch);
         }
       });
+
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setProducts(data);
       });
-  }, []);
+      
+      fetch("/api/customers")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCustomers(data);
+      })
+ }, []);
 
   async function submitTradeIn(e: React.FormEvent) {
     e.preventDefault();
@@ -134,6 +143,23 @@ export default function TradeInPage() {
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-700 block mb-1">ເລືອກລູກຄ້າ (KYC) *</label>
+            <select
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none"
+              value={form.customerId}
+              onChange={(e) => setForm({ ...form, customerId: e.target.value })}
+              required
+            >
+              <option value="">-- ເລືອກລູກຄ້າ --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.fullName} {c.phone ? `(${c.phone})` : ""}
                 </option>
               ))}
             </select>

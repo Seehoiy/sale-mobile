@@ -6,7 +6,7 @@ export async function GET(req: Request) {
   const branchId = searchParams.get("branchId") ?? undefined;
 
   const claims = await prisma.claimRequest.findMany({
-    where: branchId ? { branchId } : undefined,
+    where: branchId && branchId !== "" ? { branchId } : undefined,
     include: {
       customer: true,
       inventoryItem: true,
@@ -18,7 +18,6 @@ export async function GET(req: Request) {
   return Response.json(claims);
 }
 
-// POST /api/claims — ຮັບເຄື່ອງເຄລມຈາກລູກຄ້າ
 // body: { inventoryItemId, customerId, branchId, issueDescription, warrantyId? }
 export async function POST(req: Request) {
   const body = await req.json();
