@@ -63,24 +63,10 @@ const COLUMN_LABEL: Record<string, string> = {
 
 export default function RepairPage() {
 
-  // ====================================================
-  // Branch
-  // ====================================================
-
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState("");
 
-
-  // ====================================================
-  // Repair Jobs
-  // ====================================================
-
   const [jobs, setJobs] = useState<RepairJob[]>([]);
-
-
-  // ====================================================
-  // ⭐ ເພີ່ມ: Customer Search
-  // ====================================================
 
   const [customerSearch, setCustomerSearch] = useState("");
 
@@ -88,12 +74,7 @@ export default function RepairPage() {
 
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
-
-
-  // ====================================================
-  // ⭐ ເພີ່ມ: New Customer
-  // ====================================================
-
+ 
   const [showNewCustomer, setShowNewCustomer] =
     useState(false);
 
@@ -106,11 +87,6 @@ export default function RepairPage() {
   const [customerLoading, setCustomerLoading] =
     useState(false);
 
-
-  // ====================================================
-  // Repair Form
-  // ====================================================
-
   const [form, setForm] = useState({
     deviceDescription: "",
     passcode: "",
@@ -120,11 +96,6 @@ export default function RepairPage() {
 
   const [message, setMessage] =
     useState<string | null>(null);
-
-
-  // ====================================================
-  // Load Repair Jobs
-  // ====================================================
 
   function loadJobs(bId: string) {
 
@@ -145,11 +116,6 @@ export default function RepairPage() {
         console.error("Load repair jobs error:", error);
       });
   }
-
-
-  // ====================================================
-  // Load Branches
-  // ====================================================
 
   useEffect(() => {
 
@@ -176,15 +142,7 @@ export default function RepairPage() {
 
   }, []);
 
-
-  // ====================================================
-  // ⭐ ເພີ່ມ: Search Customer
-  // ====================================================
-
   useEffect(() => {
-
-    // ຖ້າບໍ່ມີຄຳຄົ້ນຫາ
-    // ໃຫ້ລ້າງ dropdown
 
     if (!customerSearch.trim()) {
 
@@ -192,12 +150,6 @@ export default function RepairPage() {
 
       return;
     }
-
-
-    // ==================================================
-    // Debounce 300ms
-    // ລໍຖ້າຜູ້ໃຊ້ພິມໃຫ້ຈົບກ່ອນ
-    // ==================================================
 
     const timer = setTimeout(async () => {
 
@@ -240,11 +192,6 @@ export default function RepairPage() {
 
   }, [customerSearch]);
 
-
-  // ====================================================
-  // ⭐ ເພີ່ມ: Create Repair Job
-  // ====================================================
-
   async function createJob(
     e: React.FormEvent
   ) {
@@ -252,11 +199,6 @@ export default function RepairPage() {
     e.preventDefault();
 
     setMessage(null);
-
-
-    // ==================================================
-    // ⭐ ເພີ່ມ: Require Customer
-    // ==================================================
 
     if (!selectedCustomer) {
 
@@ -266,11 +208,6 @@ export default function RepairPage() {
 
       return;
     }
-
-
-    // ==================================================
-    // POST Repair Job
-    // ==================================================
 
     const res = await fetch(
       "/api/repair-jobs",
@@ -285,8 +222,6 @@ export default function RepairPage() {
 
           branchId,
 
-          // ⭐ ເພີ່ມ:
-          // ສົ່ງ ID ຈິງຈາກ Customer
           customerId: selectedCustomer.id,
 
           deviceDescription:
@@ -315,19 +250,9 @@ export default function RepairPage() {
       return;
     }
 
-
-    // ==================================================
-    // Success
-    // ==================================================
-
     setMessage(
       `ອອກໃບຮັບຊ່ອມ ${data.ticketNo} ສຳເລັດ`
     );
-
-
-    // ==================================================
-    // ⭐ ເພີ່ມ: Reset Customer
-    // ==================================================
 
     setSelectedCustomer(null);
 
@@ -335,27 +260,14 @@ export default function RepairPage() {
 
     setCustomers([]);
 
-
-    // ==================================================
-    // Reset Repair Form
-    // ==================================================
-
     setForm({
       deviceDescription: "",
       passcode: "",
       issueDescription: "",
     });
 
-
-    // Reload jobs
-
     loadJobs(branchId);
   }
-
-
-  // ====================================================
-  // Move Repair Status
-  // ====================================================
 
   async function moveStatus(
     jobId: string,
@@ -380,11 +292,6 @@ export default function RepairPage() {
 
     loadJobs(branchId);
   }
-
-
-  // ====================================================
-  // ⭐ ເພີ່ມ: Create New Customer
-  // ====================================================
 
   async function createCustomer() {
 
@@ -427,10 +334,6 @@ export default function RepairPage() {
       const data = await res.json();
 
 
-      // =================================================
-      // Error
-      // =================================================
-
       if (!res.ok) {
 
         alert(
@@ -440,12 +343,6 @@ export default function RepairPage() {
 
         return;
       }
-
-
-      // =================================================
-      // ⭐ ເພີ່ມ:
-      // Auto Select Customer ໃໝ່
-      // =================================================
 
       setSelectedCustomer(data);
 
@@ -479,11 +376,6 @@ export default function RepairPage() {
 
     }
   }
-
-
-  // ====================================================
-  // UI
-  // ====================================================
 
   return (
 

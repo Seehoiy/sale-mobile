@@ -19,10 +19,13 @@ export async function GET(req: Request) {
     const transferWhere = isFiltered ? { toBranchId: branchId } : {};
     const saleWhere = isFiltered ? { branchId } : {};
 
+    const repairWhere = isFiltered ? { branchId } : {};
+
     const [
       inStock,
       secondHand,
       inRepair,
+      inventoryInrepair,
       pendingClaims,
       branches,
       pendingTransfers,
@@ -39,6 +42,13 @@ export async function GET(req: Request) {
         where: {
           status: "SECOND_HAND",
           ...inventoryWhere,
+        },
+      }),
+
+      prisma.repairJob.count({
+        where: {
+          status: "IN_PROGRESS",
+          ...repairWhere,
         },
       }),
 
