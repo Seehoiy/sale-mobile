@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 
 // GET /api/dashboard/stats?branchId=...
 export async function GET(req: Request) {
-
   const apiStart = Date.now();
 
   try {
@@ -27,48 +26,46 @@ export async function GET(req: Request) {
 
     const isFiltered = !!targetBranchId;
 
-<<<<<<< HEAD
-    const inventoryWhere = isFiltered ?
-      { currentBranchId: targetBranchId! } : {};
+    const inventoryWhere = isFiltered
+      ? { currentBranchId: targetBranchId! }
+      : {};
 
-    const claimWhere = isFiltered ?
-      { branchId: targetBranchId! } : {};
+    const claimWhere = isFiltered
+      ? { branchId: targetBranchId! }
+      : {};
 
-    const transferWhere = isFiltered ?
-      { toBranchId: targetBranchId! } : {};
+    const transferWhere = isFiltered
+      ? { toBranchId: targetBranchId! }
+      : {};
 
-    const saleWhere = isFiltered ?
-      { branchId: targetBranchId! } : {};
+    const saleWhere = isFiltered
+      ? { branchId: targetBranchId! }
+      : {};
 
-    const repairWhere = isFiltered ?
-      { branchId: targetBranchId! } : {};
+    const repairWhere = isFiltered
+      ? { branchId: targetBranchId! }
+      : {};
 
     // ⚡ BACKEND DB AGGREGATION & PARALLEL EXECUTION:
     // ຄຳນວນ Count & Sum ທັງໝົດຢູ່ Database Tier ຜ່ານ Promise.all ເພື່ອຄວາມໄວ 10x ແລະ ເຮັດໃຫ້ Frontend ສະຖຽນ
     const [
       inventoryByStatus,
-=======
-    const repairWhere = isFiltered ? { branchId } : {};
-
-    const [
       inStock,
       secondHand,
-      inRepair,
+      activeRepairsCount,
       inventoryInrepair,
->>>>>>> dev
       pendingClaims,
       branches,
       pendingTransfers,
       todaySales,
-      activeRepairsCount,
     ] = await Promise.all([
-<<<<<<< HEAD
       prisma.inventoryItem.groupBy({
         by: ["status"],
         where: inventoryWhere,
         _count: {
           _all: true,
-=======
+        },
+      }),
       prisma.inventoryItem.count({
         where: {
           status: "IN_STOCK",
@@ -94,11 +91,10 @@ export async function GET(req: Request) {
         where: {
           status: "IN_REPAIR",
           ...inventoryWhere,
->>>>>>> dev
         },
       }),
 
-      //Pending Claims
+      // Pending Claims
       prisma.claimRequest.count({
         where: {
           status: {
@@ -108,10 +104,10 @@ export async function GET(req: Request) {
         },
       }),
 
-      //Active Branches
+      // Active Branches
       prisma.branch.findMany({
         where: {
-          isActive: true
+          isActive: true,
         },
         select: {
           id: true,
@@ -119,11 +115,11 @@ export async function GET(req: Request) {
           code: true,
         },
         orderBy: {
-          name: "asc"
+          name: "asc",
         },
       }),
 
-      //Pending Transfers
+      // Pending Transfers
       prisma.stockTransfer.count({
         where: {
           status: "IN_TRANSIT",
@@ -144,37 +140,27 @@ export async function GET(req: Request) {
         },
         _count: true,
       }),
-
-      // Active Repair Jobs (PENDING, IN_PROGRESS, WAITING_FOR_PARTS)
-      prisma.repairJob.count({
-        where: {
-          status: {
-            in: ["PENDING", "IN_PROGRESS", "WAITING_FOR_PARTS"],
-          },
-          ...repairWhere,
-        },
-      }),
     ]);
 
-    //GroupBy ໃຫ້ເປັນ count
-    let inStock = 0;
-    let secondHand = 0;
+    // GroupBy ໃຫ້ເປັນ count
+    let calculatedInStock = inStock;
+    let calculatedSecondHand = secondHand;
 
     for (const row of inventoryByStatus) {
       const count = typeof row._count === "object" ? (row._count._all ?? (row._count as any).id ?? 0) : (row._count ?? 0);
 
       if (row.status === "IN_STOCK") {
-        inStock = count;
+        calculatedInStock = count;
       }
 
       if (row.status === "SECOND_HAND") {
-        secondHand = count;
+        calculatedSecondHand = count;
       }
     }
 
     const inRepair = activeRepairsCount;
 
-    //Log performance
+    // Log performance
     const totalTime = Date.now() - apiStart;
 
     console.log(
@@ -186,8 +172,8 @@ export async function GET(req: Request) {
       : (todaySales._count ?? 0);
 
     return NextResponse.json({
-      inStock,
-      secondHand,
+      inStock: calculatedInStock,
+      secondHand: calculatedSecondHand,
       inRepair,
       pendingClaims,
       branches,
