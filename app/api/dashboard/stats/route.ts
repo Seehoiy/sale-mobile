@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
     const today = startOfDay(new Date());
 
-    // 🛡️ SECURITY & BRANCH ISOLATION: ຖ້າເປັນ MANAGER ໃຫ້ລັອກເບິ່ງສະເພາະ branchId ຂອງຕົນເອງເທົ່ານັ້ນ
+    // 🛡️ SECURITY & BRANCH ISOLATION
     let targetBranchId: string | null = null;
     if (authUser && authUser.role === "MANAGER") {
       targetBranchId = authUser.branchId;
@@ -46,8 +46,7 @@ export async function GET(req: Request) {
       ? { branchId: targetBranchId! }
       : {};
 
-    // ⚡ BACKEND DB AGGREGATION & PARALLEL EXECUTION:
-    // ຄຳນວນ Count & Sum ທັງໝົດຢູ່ Database Tier ຜ່ານ Promise.all ເພື່ອຄວາມໄວ 10x ແລະ ເຮັດໃຫ້ Frontend ສະຖຽນ
+    // ຄຳນວນ Count & Sum ທັງໝົດຢູ່ Database Tier ຜ່ານ Promise.all
     const [
       inventoryByStatus,
       inStock,
