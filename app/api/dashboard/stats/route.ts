@@ -3,6 +3,7 @@ import { startOfDay } from "date-fns";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 
+export const runtime = 'edge';
 export const dynamic = "force-dynamic";
 
 // GET /api/dashboard/stats?branchId=...
